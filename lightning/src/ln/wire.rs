@@ -51,6 +51,7 @@ pub(crate) enum Message<T> where T: core::fmt::Debug + Type + TestEq {
 	Init(msgs::Init),
 	Error(msgs::ErrorMessage),
 	Warning(msgs::WarningMessage),
+	PayjoinPSBT(msgs::PayjoinPSBT),
 	Ping(msgs::Ping),
 	Pong(msgs::Pong),
 	OpenChannel(msgs::OpenChannel),
@@ -109,6 +110,7 @@ impl<T> Writeable for Message<T> where T: core::fmt::Debug + Type + TestEq {
 			&Message::Init(ref msg) => msg.write(writer),
 			&Message::Error(ref msg) => msg.write(writer),
 			&Message::Warning(ref msg) => msg.write(writer),
+			&Message::PayjoinPSBT(ref msg) => msg.write(writer),
 			&Message::Ping(ref msg) => msg.write(writer),
 			&Message::Pong(ref msg) => msg.write(writer),
 			&Message::OpenChannel(ref msg) => msg.write(writer),
@@ -167,6 +169,7 @@ impl<T> Type for Message<T> where T: core::fmt::Debug + Type + TestEq {
 			&Message::Init(ref msg) => msg.type_id(),
 			&Message::Error(ref msg) => msg.type_id(),
 			&Message::Warning(ref msg) => msg.type_id(),
+			&Message::PayjoinPSBT(ref msg) => msg.type_id(),
 			&Message::Ping(ref msg) => msg.type_id(),
 			&Message::Pong(ref msg) => msg.type_id(),
 			&Message::OpenChannel(ref msg) => msg.type_id(),
@@ -254,6 +257,9 @@ fn do_read<R: io::Read, T, H: core::ops::Deref>(buffer: &mut R, message_type: u1
 		},
 		msgs::WarningMessage::TYPE => {
 			Ok(Message::Warning(Readable::read(buffer)?))
+		},
+		msgs::PayjoinPSBT::TYPE => {
+			Ok(Message::PayjoinPSBT(Readable::read(buffer)?))
 		},
 		msgs::Ping::TYPE => {
 			Ok(Message::Ping(Readable::read(buffer)?))
@@ -623,6 +629,10 @@ impl Encode for msgs::ReplyChannelRange {
 
 impl Encode for msgs::GossipTimestampFilter {
 	const TYPE: u16 = 265;
+}
+
+impl Encode for msgs::PayjoinPSBT {
+	const TYPE: u16 = 266;
 }
 
 #[cfg(test)]

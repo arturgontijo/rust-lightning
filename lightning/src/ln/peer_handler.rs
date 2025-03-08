@@ -401,6 +401,11 @@ impl ChannelMessageHandler for ErroringMessageHandler {
 	}
 
 	fn message_received(&self) {}
+
+	fn handle_payjoin_psbt(&self, their_node_id: PublicKey, msg: &msgs::PayjoinPSBT) {
+		ErroringMessageHandler::push_error(self, their_node_id, msg.channel_id);
+	}
+
 }
 
 impl Deref for ErroringMessageHandler {
@@ -1804,7 +1809,11 @@ impl<Descriptor: SocketDescriptor, CM: Deref, RM: Deref, OM: Deref, L: Deref, CM
 			wire::Message::Warning(msg) => {
 				log_debug!(logger, "Got warning message from {}: {}", log_pubkey!(their_node_id), PrintableString(&msg.data));
 			},
-
+			// Payjoin POC (arturgontijo)
+			wire::Message::PayjoinPSBT(msg) => {
+				log_debug!(logger, "Got PayjoinPSBT hex from {} with length {}", log_pubkey!(their_node_id), msg.psbt_hex.len());
+				self.message_handler.chan_handler.handle_payjoin_psbt(their_node_id, &msg);
+			},
 			wire::Message::Ping(msg) => {
 				if msg.ponglen < 65532 {
 					let resp = msgs::Pong { byteslen: msg.ponglen };
@@ -2153,6 +2162,12 @@ impl<Descriptor: SocketDescriptor, CM: Deref, RM: Deref, OM: Deref, L: Deref, CM
 				// robustly gossip broadcast events even if a peer's message buffer is full.
 				let mut handle_event = |event, from_chan_handler| {
 					match event {
+						MessageSendEvent::SendPSBT { ref node_id, ref msg } => {
+							log_debug!(WithContext::from(&self.logger, Some(*node_id), Some(msg.channel_id), None), "Handling SendPSBT event in peer_handler for node {} for channel {}",
+									log_pubkey!(node_id),
+									&msg.channel_id);
+							self.enqueue_message(&mut *get_peer_for_forwarding!(node_id)?, msg);
+						},
 						MessageSendEvent::SendAcceptChannel { ref node_id, ref msg } => {
 							log_debug!(WithContext::from(&self.logger, Some(*node_id), Some(msg.common_fields.temporary_channel_id), None), "Handling SendAcceptChannel event in peer_handler for node {} for channel {}",
 									log_pubkey!(node_id),

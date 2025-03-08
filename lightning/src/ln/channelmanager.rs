@@ -28,7 +28,7 @@ use bitcoin::hashes::hmac::Hmac;
 use bitcoin::hashes::sha256::Hash as Sha256;
 use bitcoin::hash_types::{BlockHash, Txid};
 
-use bitcoin::secp256k1::{SecretKey,PublicKey};
+use bitcoin::secp256k1::{PublicKey, SecretKey};
 use bitcoin::secp256k1::Secp256k1;
 use bitcoin::{secp256k1, Sequence, Weight};
 
@@ -3708,6 +3708,52 @@ where
 			});
 		}
 		Ok(temporary_channel_id)
+	}
+
+	/// Payjoin POC (arturgontijo)
+	pub fn send_psbt(
+		&self,
+		counterparty_node_id: PublicKey,
+		channel_id: ChannelId,
+		uniform_amount: u64,
+		fee_per_participant: u64,
+		max_participants: u8,
+		participants: Vec<PublicKey>,
+		psbt_hex: String,
+		sign: bool,
+	) -> Result<(), APIError> {
+		println!("lightning::send_psbt(1): {:?}", counterparty_node_id);
+		let per_peer_state = self.per_peer_state.read().unwrap();
+		let peer_state_mutex = per_peer_state.get(&counterparty_node_id)
+			.ok_or_else(|| APIError::ChannelUnavailable{err: "No peer matching the path's first hop found!".to_owned() })?;
+		let mut peer_state_lock = peer_state_mutex.lock().unwrap();
+		let peer_state = &mut *peer_state_lock;
+
+		peer_state.pending_msg_events.push(events::MessageSendEvent::SendPSBT {
+			node_id: counterparty_node_id,
+			msg: msgs::PayjoinPSBT {
+				channel_id,
+				receiver_node_id: counterparty_node_id.clone(),
+				uniform_amount,
+				fee_per_participant,
+				max_participants,
+				participants: participants.clone(),
+				psbt_hex: psbt_hex.clone(),
+				sign: sign.clone(),
+			},
+		});
+
+		let mut pending_events = self.pending_events.lock().unwrap();
+		pending_events.push_back((events::Event::PSBTSent {
+			next_node_id: counterparty_node_id,
+			uniform_amount,
+			fee_per_participant,
+			max_participants,
+			participants,
+			psbt_hex,
+			sign,
+		}, None));
+		Ok(())
 	}
 
 	fn list_funded_channels_with_filter<Fn: FnMut(&(&ChannelId, &Channel<SP>)) -> bool + Copy>(&self, f: Fn) -> Vec<ChannelDetails> {
@@ -11574,6 +11620,7 @@ where
 				peer_state.inbound_channel_request_by_id.clear();
 				pending_msg_events.retain(|msg| {
 					match msg {
+						&events::MessageSendEvent::SendPSBT { .. } => false,
 						// V1 Channel Establishment
 						&events::MessageSendEvent::SendAcceptChannel { .. } => false,
 						&events::MessageSendEvent::SendOpenChannel { .. } => false,
@@ -11972,6 +12019,21 @@ where
 				}
 			}
 		}
+	}
+
+	fn handle_payjoin_psbt(&self, their_node_id: PublicKey, msg: &msgs::PayjoinPSBT) {
+		let msgs::PayjoinPSBT { receiver_node_id, uniform_amount, fee_per_participant, max_participants, participants, psbt_hex, sign, .. } = msg;
+		let mut pending_events = self.pending_events.lock().unwrap();
+		pending_events.push_back((events::Event::PSBTReceived {
+			receiver_node_id: *receiver_node_id,
+			prev_node_id: their_node_id,
+			uniform_amount: *uniform_amount,
+			fee_per_participant: *fee_per_participant,
+			max_participants: *max_participants,
+			participants: participants.to_vec(),
+			psbt_hex: psbt_hex.clone(),
+			sign: sign.clone(),
+		}, None));
 	}
 }
 

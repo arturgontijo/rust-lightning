@@ -160,6 +160,27 @@ pub struct WarningMessage {
 	pub data: String,
 }
 
+/// Payjoin POC (arturgontijo)
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+pub struct PayjoinPSBT {
+	/// 
+	pub channel_id: ChannelId,
+	///
+	pub receiver_node_id: PublicKey,
+	///
+	pub uniform_amount: u64,
+	/// 
+	pub fee_per_participant: u64,
+	/// 
+	pub max_participants: u8,
+	/// 
+	pub participants: Vec<PublicKey>,
+	/// 
+	pub psbt_hex: String,
+	/// 
+	pub sign: bool,
+}
+
 /// A [`ping`] message to be sent to or received from a peer.
 ///
 /// [`ping`]: https://github.com/lightning/bolts/blob/master/01-messaging.md#the-ping-and-pong-messages
@@ -1615,6 +1636,9 @@ pub trait ChannelMessageHandler : MessageSendEventsProvider {
 	/// Note: Since this function is called frequently, it should be as
 	/// efficient as possible for its intended purpose.
 	fn message_received(&self);
+
+	/// Payjoin POC (arturgontijo)
+	fn handle_payjoin_psbt(&self, their_node_id: PublicKey, msg: &PayjoinPSBT);
 }
 
 /// A trait to describe an object which can receive routing messages.
@@ -3141,6 +3165,17 @@ impl Readable for WarningMessage {
 		})
 	}
 }
+
+impl_writeable_msg!(PayjoinPSBT, {
+	channel_id,
+	receiver_node_id,
+	uniform_amount,
+	fee_per_participant,
+	max_participants,
+	participants,
+	psbt_hex,
+	sign,
+}, {});
 
 impl Writeable for UnsignedNodeAnnouncement {
 	fn write<W: Writer>(&self, w: &mut W) -> Result<(), io::Error> {

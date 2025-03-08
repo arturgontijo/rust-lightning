@@ -918,6 +918,8 @@ impl msgs::ChannelMessageHandler for TestChannelMessageHandler {
 	}
 
 	fn message_received(&self) {}
+
+	fn handle_payjoin_psbt(&self, _their_node_id: PublicKey, _msg: &msgs::PayjoinPSBT) {}
 }
 
 impl events::MessageSendEventsProvider for TestChannelMessageHandler {

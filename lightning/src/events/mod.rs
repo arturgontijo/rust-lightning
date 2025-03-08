@@ -36,7 +36,7 @@ use crate::util::errors::APIError;
 use crate::util::ser::{BigSize, FixedLengthReader, Writeable, Writer, MaybeReadable, Readable, RequiredWrapper, UpgradableRequired, WithoutLength};
 use crate::util::string::UntrustedString;
 
-use bitcoin::{Transaction, OutPoint};
+use bitcoin::{OutPoint, Transaction};
 use bitcoin::script::ScriptBuf;
 use bitcoin::hashes::Hash;
 use bitcoin::hashes::sha256::Hash as Sha256;
@@ -664,6 +664,42 @@ pub enum Event {
 		/// [`ChannelManager::accept_inbound_channel`]: crate::ln::channelmanager::ChannelManager::accept_inbound_channel
 		/// [`UserConfig::manually_accept_inbound_channels`]: crate::util::config::UserConfig::manually_accept_inbound_channels
 		user_channel_id: u128,
+	},
+	/// Payjoin POC (arturgontijo)
+	PSBTReceived {
+		///
+		receiver_node_id: PublicKey,
+		///
+		prev_node_id: PublicKey,
+		/// 
+		uniform_amount: u64,
+		/// 
+		fee_per_participant: u64,
+		/// 
+		max_participants: u8,
+		/// Vec of node_id, to be used when routing final PSBT back to user
+		participants: Vec<PublicKey>,
+		/// PSBT hex string
+		psbt_hex: String,
+		/// Signing workflow
+		sign: bool,
+	},
+	/// Payjoin POC (arturgontijo)
+	PSBTSent {
+		///
+		next_node_id: PublicKey,
+		///
+		uniform_amount: u64,
+		/// 
+		fee_per_participant: u64,
+		/// 
+		max_participants: u8,
+		/// Vec of node_id, to be used when routing final PSBT back to user
+		participants: Vec<PublicKey>,
+		/// PSBT hex string
+		psbt_hex: String,
+		/// Signing workflow
+		sign: bool,
 	},
 	/// Used to indicate that the counterparty node has provided the signature(s) required to
 	/// recover our funds in case they go offline.
@@ -1822,6 +1858,31 @@ impl Writeable for Event {
 					(8, former_temporary_channel_id, required),
 				});
 			},
+			&Event::PSBTReceived { ref receiver_node_id, ref prev_node_id, ref uniform_amount, ref fee_per_participant, ref max_participants, ref participants, ref psbt_hex, ref sign  } => {
+				45u8.write(writer)?;
+				write_tlv_fields!(writer, {
+					(0, receiver_node_id, required),
+					(1, prev_node_id, required),
+					(2, uniform_amount, required),
+					(3, fee_per_participant, required),
+					(4, max_participants, required),
+					(5, *participants, required_vec),
+					(6, psbt_hex, required),
+					(7, sign, required),
+				});
+			},
+			&Event::PSBTSent { ref next_node_id, ref uniform_amount, ref fee_per_participant, ref max_participants, ref participants, ref psbt_hex, ref sign  } => {
+				47u8.write(writer)?;
+				write_tlv_fields!(writer, {
+					(0, next_node_id, required),
+					(1, uniform_amount, required),
+					(2, fee_per_participant, required),
+					(3, max_participants, required),
+					(4, *participants, required_vec),
+					(5, psbt_hex, required),
+					(6, sign, required),
+				});
+			},
 			// Note that, going forward, all new events must only write data inside of
 			// `write_tlv_fields`. Versions 0.0.101+ will ignore odd-numbered events that write
 			// data via `write_tlv_fields`.
@@ -2356,6 +2417,13 @@ impl MaybeReadable for Event {
 #[derive(Clone, Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub enum MessageSendEvent {
+	/// Payjoin POC (arturgontijo)
+	SendPSBT {
+		/// 
+		node_id: PublicKey,
+		/// 
+		msg: msgs::PayjoinPSBT,
+	},
 	/// Used to indicate that we've accepted a channel open and should send the accept_channel
 	/// message provided to the given peer.
 	SendAcceptChannel {
