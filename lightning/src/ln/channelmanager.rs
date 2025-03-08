@@ -3722,7 +3722,6 @@ where
 		psbt_hex: String,
 		sign: bool,
 	) -> Result<(), APIError> {
-		println!("lightning::send_psbt(1): {:?}", counterparty_node_id);
 		let per_peer_state = self.per_peer_state.read().unwrap();
 		let peer_state_mutex = per_peer_state.get(&counterparty_node_id)
 			.ok_or_else(|| APIError::ChannelUnavailable{err: "No peer matching the path's first hop found!".to_owned() })?;
