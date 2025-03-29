@@ -163,8 +163,6 @@ pub struct WarningMessage {
 /// Payjoin POC (arturgontijo)
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub struct PayjoinPSBT {
-	/// 
-	pub channel_id: ChannelId,
 	///
 	pub receiver_node_id: PublicKey,
 	///
@@ -3167,7 +3165,6 @@ impl Readable for WarningMessage {
 }
 
 impl_writeable_msg!(PayjoinPSBT, {
-	channel_id,
 	receiver_node_id,
 	uniform_amount,
 	fee_per_participant,

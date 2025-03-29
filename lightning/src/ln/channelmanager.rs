@@ -3714,7 +3714,6 @@ where
 	pub fn send_psbt(
 		&self,
 		counterparty_node_id: PublicKey,
-		channel_id: ChannelId,
 		uniform_amount: u64,
 		fee_per_participant: u64,
 		max_participants: u8,
@@ -3731,7 +3730,6 @@ where
 		peer_state.pending_msg_events.push(events::MessageSendEvent::SendPSBT {
 			node_id: counterparty_node_id,
 			msg: msgs::PayjoinPSBT {
-				channel_id,
 				receiver_node_id: counterparty_node_id.clone(),
 				uniform_amount,
 				fee_per_participant,

@@ -402,9 +402,7 @@ impl ChannelMessageHandler for ErroringMessageHandler {
 
 	fn message_received(&self) {}
 
-	fn handle_payjoin_psbt(&self, their_node_id: PublicKey, msg: &msgs::PayjoinPSBT) {
-		ErroringMessageHandler::push_error(self, their_node_id, msg.channel_id);
-	}
+	fn handle_payjoin_psbt(&self, _their_node_id: PublicKey, _msg: &msgs::PayjoinPSBT) {}
 
 }
 
@@ -2163,9 +2161,8 @@ impl<Descriptor: SocketDescriptor, CM: Deref, RM: Deref, OM: Deref, L: Deref, CM
 				let mut handle_event = |event, from_chan_handler| {
 					match event {
 						MessageSendEvent::SendPSBT { ref node_id, ref msg } => {
-							log_debug!(WithContext::from(&self.logger, Some(*node_id), Some(msg.channel_id), None), "Handling SendPSBT event in peer_handler for node {} for channel {}",
-									log_pubkey!(node_id),
-									&msg.channel_id);
+							log_debug!(WithContext::from(&self.logger, Some(*node_id), None, None), "Handling SendPSBT event in peer_handler for node {}",
+									log_pubkey!(node_id));
 							self.enqueue_message(&mut *get_peer_for_forwarding!(node_id)?, msg);
 						},
 						MessageSendEvent::SendAcceptChannel { ref node_id, ref msg } => {
