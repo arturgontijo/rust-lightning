@@ -174,6 +174,8 @@ pub struct PayjoinPSBT {
 	/// 
 	pub participants: Vec<PublicKey>,
 	/// 
+	pub hops: Vec<PublicKey>,
+	/// 
 	pub psbt_hex: String,
 	/// 
 	pub sign: bool,
@@ -3170,6 +3172,7 @@ impl_writeable_msg!(PayjoinPSBT, {
 	fee_per_participant,
 	max_participants,
 	participants,
+	hops,
 	psbt_hex,
 	sign,
 }, {});

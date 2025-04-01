@@ -3718,6 +3718,7 @@ where
 		fee_per_participant: u64,
 		max_participants: u8,
 		participants: Vec<PublicKey>,
+		hops: Vec<PublicKey>,
 		psbt_hex: String,
 		sign: bool,
 	) -> Result<(), APIError> {
@@ -3735,6 +3736,7 @@ where
 				fee_per_participant,
 				max_participants,
 				participants: participants.clone(),
+				hops: hops.clone(),
 				psbt_hex: psbt_hex.clone(),
 				sign: sign.clone(),
 			},
@@ -3747,6 +3749,7 @@ where
 			fee_per_participant,
 			max_participants,
 			participants,
+			hops,
 			psbt_hex,
 			sign,
 		}, None));
@@ -12019,7 +12022,7 @@ where
 	}
 
 	fn handle_payjoin_psbt(&self, their_node_id: PublicKey, msg: &msgs::PayjoinPSBT) {
-		let msgs::PayjoinPSBT { receiver_node_id, uniform_amount, fee_per_participant, max_participants, participants, psbt_hex, sign, .. } = msg;
+		let msgs::PayjoinPSBT { receiver_node_id, uniform_amount, fee_per_participant, max_participants, participants, hops, psbt_hex, sign, .. } = msg;
 		let mut pending_events = self.pending_events.lock().unwrap();
 		pending_events.push_back((events::Event::PSBTReceived {
 			receiver_node_id: *receiver_node_id,
@@ -12028,6 +12031,7 @@ where
 			fee_per_participant: *fee_per_participant,
 			max_participants: *max_participants,
 			participants: participants.to_vec(),
+			hops: hops.to_vec(),
 			psbt_hex: psbt_hex.clone(),
 			sign: sign.clone(),
 		}, None));

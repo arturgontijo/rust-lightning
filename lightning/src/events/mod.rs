@@ -677,8 +677,10 @@ pub enum Event {
 		fee_per_participant: u64,
 		/// 
 		max_participants: u8,
-		/// Vec of node_id, to be used when routing final PSBT back to user
+		/// Vec of participants' node_id
 		participants: Vec<PublicKey>,
+		/// Vec of node_id, to be used when routing final PSBT back to user
+		hops: Vec<PublicKey>,
 		/// PSBT hex string
 		psbt_hex: String,
 		/// Signing workflow
@@ -694,8 +696,10 @@ pub enum Event {
 		fee_per_participant: u64,
 		/// 
 		max_participants: u8,
-		/// Vec of node_id, to be used when routing final PSBT back to user
+		/// Vec of participants' node_id
 		participants: Vec<PublicKey>,
+		/// Vec of node_id, to be used when routing final PSBT back to user
+		hops: Vec<PublicKey>,
 		/// PSBT hex string
 		psbt_hex: String,
 		/// Signing workflow
@@ -1858,7 +1862,7 @@ impl Writeable for Event {
 					(8, former_temporary_channel_id, required),
 				});
 			},
-			&Event::PSBTReceived { ref receiver_node_id, ref prev_node_id, ref uniform_amount, ref fee_per_participant, ref max_participants, ref participants, ref psbt_hex, ref sign  } => {
+			&Event::PSBTReceived { ref receiver_node_id, ref prev_node_id, ref uniform_amount, ref fee_per_participant, ref max_participants, ref participants, ref hops, ref psbt_hex, ref sign  } => {
 				45u8.write(writer)?;
 				write_tlv_fields!(writer, {
 					(0, receiver_node_id, required),
@@ -1867,11 +1871,12 @@ impl Writeable for Event {
 					(3, fee_per_participant, required),
 					(4, max_participants, required),
 					(5, *participants, required_vec),
-					(6, psbt_hex, required),
-					(7, sign, required),
+					(6, *hops, required_vec),
+					(7, psbt_hex, required),
+					(8, sign, required),
 				});
 			},
-			&Event::PSBTSent { ref next_node_id, ref uniform_amount, ref fee_per_participant, ref max_participants, ref participants, ref psbt_hex, ref sign  } => {
+			&Event::PSBTSent { ref next_node_id, ref uniform_amount, ref fee_per_participant, ref max_participants, ref participants, ref hops, ref psbt_hex, ref sign  } => {
 				47u8.write(writer)?;
 				write_tlv_fields!(writer, {
 					(0, next_node_id, required),
@@ -1879,8 +1884,9 @@ impl Writeable for Event {
 					(2, fee_per_participant, required),
 					(3, max_participants, required),
 					(4, *participants, required_vec),
-					(5, psbt_hex, required),
-					(6, sign, required),
+					(5, *hops, required_vec),
+					(6, psbt_hex, required),
+					(7, sign, required),
 				});
 			},
 			// Note that, going forward, all new events must only write data inside of
